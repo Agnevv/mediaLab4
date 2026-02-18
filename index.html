@@ -1,102 +1,86 @@
 <!DOCTYPE html>
-<!--
- *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree.
--->
-<html>
+<html lang="lt">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+  <title>WebRTC Filters + Sobel Edge</title>
 
-    <meta charset="utf-8">
-    <meta name="description" content="WebRTC code samples">
-    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
-    <meta itemprop="description" content="Client-side WebRTC code samples">
-    <meta itemprop="image" content="../../../images/webrtc-icon-192x192.png">
-    <meta itemprop="name" content="WebRTC code samples">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta id="theme-color" name="theme-color" content="#ffffff">
-
-    <base target="_blank">
-
-    <title>getUserMedia + CSS filters</title>
-
-    <link rel="icon" sizes="192x192" href="../../../images/webrtc-icon-192x192.png">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="../../../css/main.css">
-
-    <style>
-        .none {
-            -webkit-filter: none;
-            filter: none;
-        }
-
-        .blur {
-            -webkit-filter: blur(3px);
-            filter: blur(3px);
-        }
-
-        .grayscale {
-            -webkit-filter: grayscale(1);
-            filter: grayscale(1);
-        }
-
-        .invert {
-            -webkit-filter: invert(1);
-            filter: invert(1);
-        }
-
-        .sepia {
-            -webkit-filter: sepia(1);
-            filter: sepia(1);
-        }
-
-        button#snapshot {
-            margin: 0 10px 25px 0;
-            width: 110px;
-        }
-
-        video {
-            object-fit: cover;
-        }
-    </style>
-
+  <!-- palik sample main.css jei reikia (neprivaloma) -->
+  <link rel="stylesheet" href="css/main.css">
+  <!-- mūsų UI stilius -->
+  <link rel="stylesheet" href="css/ui.css">
 </head>
 
 <body>
-<div id="container">
+  <div class="wrap">
+    <header class="hdr">
+      <div>
+        <h1>WebRTC + Filters (CSS) + Sobel Edge (custom)</h1>
+        <p class="sub">Pasirink CSS filtrą arba „Sobel Edge“. Slideris realiu laiku keičia Sobel threshold.</p>
+      </div>
+    </header>
 
-    <h1><a href="//webrtc.github.io/samples/" title="WebRTC samples homepage">WebRTC samples</a> <span>getUserMedia + CSS filters</span>
-    </h1>
+    <div class="card">
+      <div class="top">
+        <div class="panel">
+          <div class="videoBox">
+            <video id="video" playsinline autoplay></video>
+            <canvas id="fxCanvas" width="480" height="360"></canvas>
+          </div>
 
-    <video playsinline autoplay></video>
+          <!-- hidden work canvas for reading pixels -->
+          <canvas id="workCanvas" width="480" height="360" class="hiddenCanvas"></canvas>
+        </div>
 
-    <label for="filter">Filter: </label>
-    <select id="filter">
-        <option value="none">None</option>
-        <option value="blur">Blur</option>
-        <option value="grayscale">Grayscale</option>
-        <option value="invert">Invert</option>
-        <option value="sepia">Sepia</option>
-    </select>
+        <div class="panel">
+          <div class="controls">
+            <div class="row">
+              <div>
+                <label for="filter">Filter</label>
+                <select id="filter" class="select">
+                  <option value="none">None</option>
+                  <option value="blur">Blur</option>
+                  <option value="grayscale">Grayscale</option>
+                  <option value="invert">Invert</option>
+                  <option value="sepia">Sepia</option>
+                  <option value="sobel">Sobel Edge (custom)</option>
+                </select>
+              </div>
 
-    <button id="snapshot">Take snapshot</button>
+              <button id="snapshot" class="btn">Take snapshot</button>
+              <button id="clearShots" class="tinyBtn" type="button">Clear snapshots</button>
+            </div>
 
-    <canvas></canvas>
+            <div id="sobelControl" class="sliderWrap">
+              <div class="sliderTop">
+                <div>
+                  <label for="threshold" class="noMargin">Sobel threshold</label>
+                </div>
+                <div class="pill"><span id="thresholdValue">80</span></div>
+              </div>
+              <input type="range" id="threshold" min="0" max="255" value="80">
+              <div class="hint">Mažesnis threshold → daugiau kraštinių. Didesnis → tik ryškiausios kraštinės.</div>
+            </div>
 
-    <p>Draw a frame from the getUserMedia video stream onto the canvas element, then apply CSS filters.</p>
+            <div class="hint">
+              CSS filtrai taikomi video elementui. „Sobel Edge“ apdorojamas per canvas ir rodomas realiu laiku.
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <p>The variables <code>canvas</code>, <code>video</code> and <code>stream</code> are in global scope, so you can
-        inspect them from the console.</p>
+      <div class="shots">
+        <div class="shotsHeader">
+          <h2>Snapshots</h2>
+          <span id="shotCount">0</span>
+        </div>
+        <div id="shotsGrid" class="grid"></div>
+      </div>
+    </div>
+  </div>
 
-    <a href="https://github.com/webrtc/samples/tree/gh-pages/src/content/getusermedia/filter"
-       title="View source for this page on GitHub" id="viewSource">View source on GitHub</a>
-</div>
-
-<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-<script src="js/main.js" async></script>
-
-<script src="../../../js/lib/ga.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="js/sobel_edge.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
